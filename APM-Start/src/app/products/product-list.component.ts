@@ -1,39 +1,72 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit} from '@angular/core';
 
 import { IProduct } from './product';
 import { ProductService } from './product.service';
+import { NgModel } from '@angular/forms';
+import { CriteriaComponent } from '../shared/criteria/criteria.component';
+import { ProductParameterService } from './product-parameter.service';
 
 @Component({
     templateUrl: './product-list.component.html',
     styleUrls: ['./product-list.component.css']
 })
-export class ProductListComponent implements OnInit {
-    pageTitle: string = 'Product List';
-    listFilter: string;
-    showImage: boolean;
+export class ProductListComponent implements OnInit, AfterViewInit  {
 
+    @ViewChild(CriteriaComponent) filterComponent: CriteriaComponent;
+    parentListFilter: string;
+
+    
+    pageTitle: string = 'Product List';
+   
     imageWidth: number = 50;
     imageMargin: number = 2;
     errorMessage: string;
-
+    includeDetail: boolean = true;
+    
+     
     filteredProducts: IProduct[];
     products: IProduct[];
 
-    constructor(private productService: ProductService) { }
+    
+    get showImage(): boolean {
+        return this.productParameterService.showImage;
+    }
+    set showImage(value: boolean) {
+        this.productParameterService.showImage = value;
+    }
+
+    constructor(private productService: ProductService,
+                private productParameterService: ProductParameterService) {
+         
+     }
 
     ngOnInit(): void {
         this.productService.getProducts().subscribe(
             (products: IProduct[]) => {
                 this.products = products;
-                this.performFilter(this.listFilter);
+                this.filterComponent.listFilter = 
+                this.productParameterService.filterBy;
+                
             },
             (error: any) => this.errorMessage = <any>error
         );
     }
 
+     ngAfterViewInit(): void {
+        this.parentListFilter = this.filterComponent.listFilter;
+     }
+
+    
     toggleImage(): void {
         this.showImage = !this.showImage;
     }
+
+    onValueChange(value: string): void {
+        this.productParameterService.filterBy = value;
+        this.performFilter(value);
+    }
+    
+    
 
     performFilter(filterBy?: string): void {
         if (filterBy) {
@@ -42,5 +75,6 @@ export class ProductListComponent implements OnInit {
         } else {
             this.filteredProducts = this.products;
         }
+         
     }
 }
